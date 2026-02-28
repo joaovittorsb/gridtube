@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GridTube</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bebas+Neue&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080809;
+    --panel: #0f0f12;
+    --border: #1c1c24;
+    --red: #ff2d2d;
+    --red-dim: rgba(255,45,45,0.15);
+    --text: #f0f0f5;
+    --muted: #44445a;
+    --accent: #ff2d2d;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 14px 28px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.9rem;
+    letter-spacing: 2px;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+  .logo span { color: var(--red); }
+
+  .input-wrap {
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    align-items: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0 14px;
+    gap: 10px;
+    transition: border-color 0.2s;
+  }
+  .input-wrap:focus-within { border-color: var(--red); }
+  .input-wrap svg { flex-shrink: 0; opacity: 0.4; }
+
+  #urlInput {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    padding: 10px 0;
+  }
+  #urlInput::placeholder { color: var(--muted); }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .ctrl-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ctrl-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .num-btn {
+    width: 26px; height: 26px;
+    background: var(--border);
+    border: none;
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .num-btn:hover { background: var(--red); }
+
+  .num-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--red);
+    min-width: 28px;
+    text-align: center;
+  }
+
+  .btn {
+    padding: 9px 20px;
+    border: none;
+    border-radius: 7px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.18s;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-primary {
+    background: var(--red);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #e02020; transform: translateY(-1px); }
+
+  .btn-stop {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-stop:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── TIMER BAR ── */
+  .timerbar-wrap {
+    height: 3px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .timerbar {
+    height: 100%;
+    background: var(--red);
+    width: 100%;
+    transform-origin: left;
+    transition: width 1s linear;
+  }
+
+  /* ── STATUS ── */
+  .statusbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 7px 28px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+  .dot.live { background: var(--red); animation: blink 1.4s infinite; }
+
+  .status-text { color: var(--text); }
+  .status-countdown { color: var(--red); font-weight: 500; margin-left: auto; }
+
+  /* ── GRID ── */
+  .grid-area {
+    flex: 1;
+    padding: 20px;
+    display: grid;
+    gap: 12px;
+    align-content: start;
+  }
+
+  .player-cell {
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 16/9;
+    border: 1px solid var(--border);
+    transition: border-color 0.2s;
+    animation: fadeIn 0.4s ease both;
+  }
+
+  .player-cell:hover { border-color: var(--red); }
+
+  .player-cell iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+
+  .cell-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 14px;
+    color: var(--muted);
+    padding: 60px 20px;
+  }
+
+  .empty svg { opacity: 0.2; }
+
+  .empty p {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    text-align: center;
+    line-height: 1.7;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.97); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">Grid<span>Tube</span></div>
+
+  <div class="input-wrap">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+    </svg>
+    <input type="text" id="urlInput" placeholder="https://www.youtube.com/watch?v=..." />
+  </div>
+
+  <div class="controls">
+    <div class="ctrl-group">
+      <span class="ctrl-label">Janelas</span>
+      <button class="num-btn" onclick="change('windows',-1)">−</button>
+      <span class="num-val" id="windowsVal">4</span>
+      <button class="num-btn" onclick="change('windows',1)">+</button>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">Refresh (s)</span>
+      <button class="num-btn" onclick="change('timer',-5)">−</button>
+      <span class="num-val" id="timerVal">60</span>
+      <button class="num-btn" onclick="change('timer',5)">+</button>
+    </div>
+
+    <button class="btn btn-primary" onclick="launch()">▶ Iniciar</button>
+    <button class="btn btn-stop" onclick="stopAll()">■ Parar</button>
+  </div>
+</div>
+
+<!-- TIMER BAR -->
+<div class="timerbar-wrap">
+  <div class="timerbar" id="timerbar"></div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <div class="dot" id="dot"></div>
+  <span class="status-text" id="statusText">Aguardando URL...</span>
+  <span class="status-countdown" id="countdown"></span>
+</div>
+
+<!-- CONTENT -->
+<div id="content" style="display:flex;flex:1;flex-direction:column;">
+  <div class="empty" id="emptyState">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="2" y="3" width="20" height="14" rx="2"/>
+      <path d="M8 21h8M12 17v4"/>
+      <path d="M10 8l6 3.5-6 3.5V8z" fill="currentColor"/>
+    </svg>
+    <p>Cole um link do YouTube acima<br>e clique em <strong style="color:#f0f0f5">▶ Iniciar</strong></p>
+  </div>
+  <div class="grid-area" id="grid" style="display:none;"></div>
+</div>
+
+<script>
+  let windowsCount = 4;
+  let timerSecs = 60;
+  let tickId = null;
+  let remaining = 0;
+  let refreshTotal = 0;
+
+  function change(type, delta) {
+    if (type === 'windows') {
+      windowsCount = Math.max(1, Math.min(16, windowsCount + delta));
+      document.getElementById('windowsVal').textContent = windowsCount;
+    } else {
+      timerSecs = Math.max(10, Math.min(3600, timerSecs + delta));
+      document.getElementById('timerVal').textContent = timerSecs;
+    }
+  }
+
+  function extractVideoId(url) {
+    try {
+      const u = new URL(url.startsWith('http') ? url : 'https://' + url);
+      // youtube.com/watch?v=ID
+      if (u.searchParams.get('v')) return u.searchParams.get('v');
+      // youtu.be/ID
+      if (u.hostname === 'youtu.be') return u.pathname.slice(1).split('?')[0];
+      // youtube.com/embed/ID
+      const m = u.pathname.match(/\/embed\/([^/?]+)/);
+      if (m) return m[1];
+    } catch(e) {}
+    // fallback regex
+    const m = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  function buildEmbedUrl(videoId) {
+    return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&enablejsapi=0`;
+  }
+
+  function launch() {
+    const raw = document.getElementById('urlInput').value.trim();
+    if (!raw) { alert('Cole um link do YouTube!'); return; }
+
+    const vid = extractVideoId(raw);
+    if (!vid) { alert('Link do YouTube inválido. Verifique e tente novamente.'); return; }
+
+    stopAll(true);
+    buildGrid(vid);
+    startTimer(vid);
+  }
+
+  function buildGrid(videoId) {
+    const grid = document.getElementById('grid');
+    const empty = document.getElementById('emptyState');
+    grid.innerHTML = '';
+
+    // Calcular colunas
+    const cols = windowsCount <= 1 ? 1
+               : windowsCount <= 2 ? 2
+               : windowsCount <= 4 ? 2
+               : windowsCount <= 6 ? 3
+               : windowsCount <= 9 ? 3
+               : 4;
+
+    grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    grid.style.display = 'grid';
+    empty.style.display = 'none';
+
+    for (let i = 0; i < windowsCount; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'player-cell';
+      cell.style.animationDelay = (i * 0.06) + 's';
+
+      const badge = document.createElement('div');
+      badge.className = 'cell-badge';
+      badge.textContent = `#${i + 1}`;
+
+      const iframe = document.createElement('iframe');
+      iframe.src = buildEmbedUrl(videoId);
+      iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
+      iframe.allowFullscreen = true;
+
+      cell.appendChild(iframe);
+      cell.appendChild(badge);
+      grid.appendChild(cell);
+    }
+
+    document.getElementById('dot').classList.add('live');
+    document.getElementById('statusText').textContent =
+      `${windowsCount} player(s) ativos`;
+  }
+
+  function startTimer(videoId) {
+    remaining = timerSecs;
+    updateBar();
+
+    tickId = setInterval(() => {
+      remaining--;
+      updateBar();
+      if (remaining <= 0) {
+        refreshAll(videoId);
+        remaining = timerSecs;
+      }
+    }, 1000);
+  }
+
+  function refreshAll(videoId) {
+    refreshTotal++;
+    const iframes = document.querySelectorAll('.player-cell iframe');
+    iframes.forEach(iframe => {
+      // Recarrega o src para forçar novo request
+      const src = buildEmbedUrl(videoId);
+      iframe.src = '';
+      setTimeout(() => { iframe.src = src; }, 80);
+    });
+    document.getElementById('statusText').textContent =
+      `Refresh #${refreshTotal} — ${iframes.length} player(s) atualizados`;
+  }
+
+  function updateBar() {
+    const pct = (remaining / timerSecs) * 100;
+    document.getElementById('timerbar').style.width = pct + '%';
+    document.getElementById('countdown').textContent =
+      remaining > 0 ? `Próximo refresh em ${remaining}s` : '';
+  }
+
+  function stopAll(silent = false) {
+    clearInterval(tickId);
+    tickId = null;
+    if (!silent) {
+      document.getElementById('grid').style.display = 'none';
+      document.getElementById('grid').innerHTML = '';
+      document.getElementById('emptyState').style.display = 'flex';
+      document.getElementById('dot').classList.remove('live');
+      document.getElementById('statusText').textContent = 'Aguardando URL...';
+      document.getElementById('countdown').textContent = '';
+      document.getElementById('timerbar').style.width = '100%';
+      refreshTotal = 0;
+    }
+  }
+
+  // Enter para iniciar
+  document.getElementById('urlInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') launch();
+  });
+</script>
+</body>
+</html>
