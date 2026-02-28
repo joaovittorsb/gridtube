@@ -344,12 +344,15 @@
       if (u.searchParams.get('v')) return u.searchParams.get('v');
       // youtu.be/ID
       if (u.hostname === 'youtu.be') return u.pathname.slice(1).split('?')[0];
+      // youtube.com/shorts/ID
+      const shorts = u.pathname.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
+      if (shorts) return shorts[1];
       // youtube.com/embed/ID
-      const m = u.pathname.match(/\/embed\/([^/?]+)/);
-      if (m) return m[1];
+      const embed = u.pathname.match(/\/embed\/([^/?]+)/);
+      if (embed) return embed[1];
     } catch(e) {}
-    // fallback regex
-    const m = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+    // fallback regex (watch, youtu.be, embed, shorts)
+    const m = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
     return m ? m[1] : null;
   }
 
